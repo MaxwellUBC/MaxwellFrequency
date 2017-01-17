@@ -3,7 +3,7 @@ export getSensMatVec
 # = ========= The forward sensitivity ===========================
 
 function getSensMatVec(x::Vector,
-				   	     sigma::Vector,  # conductivity on fwd mesh
+				   	      sigma::Vector,  # conductivity on fwd mesh
 					        param::MaxwellFreqParam)
     # Sens Mat Vec for FV disctretization on OcTreeMesh
     # matv = J*x
@@ -13,8 +13,8 @@ function getSensMatVec(x::Vector,
 	P    = param.Obs
 	
 	Curl = getCurlMatrix(param.Mesh)
-	Msig = getEdgeMassMatrix(param.Mesh,vec(sigma))
-  Mmu  = getFaceMassMatrix(param.Mesh,fill(1/mu,length(sigma)))
+	Msig = getEdgeMassMatrix(param.Mesh,sigma)
+  Mmu  = getFaceMassMatrix(param.Mesh,fill(1/mu,param.Mesh.nc))
   
   # eliminate hanging edges and faces
 	Ne,   = getEdgeConstraints(param.Mesh)
@@ -30,7 +30,7 @@ function getSensMatVec(x::Vector,
 
 	for i=1:size(U,2)
 		u = U[:,i] 
-		dAdm    = getdEdgeMassMatrix(param.Mesh,u)
+		dAdm    = getdEdgeMassMatrix(param.Mesh,sigma,u)
 		z       = -im*w*Ne'*dAdm*x
 		z,      = solveMaxFreq(A,z,Msig,param.Mesh,w,param.Ainv,0)
 		z       = vec(Ne*z)

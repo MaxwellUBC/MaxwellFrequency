@@ -2,7 +2,7 @@ export getData
 
 # = ========= The forward problem ===========================
 
-function getData(sigma,   # conductivity
+function getData(sigma::Vector,   # conductivity
 	              param::MaxwellFreqParam,
 	              doClear::Bool=false)
 	# Maxwell Forward problem
@@ -15,9 +15,9 @@ function getData(sigma,   # conductivity
 	P    = param.Obs
 	
 	Curl = getCurlMatrix(param.Mesh)
-	
-	Msig = getEdgeMassMatrix(param.Mesh,vec(sigma))
-	Mmu  = getFaceMassMatrix(param.Mesh,fill(1/mu,length(sigma)))
+  
+	Msig = getEdgeMassMatrix(param.Mesh,sigma)
+	Mmu  = getFaceMassMatrix(param.Mesh,fill(1/mu,param.Mesh.nc))
   
   # eliminate hanging edges and faces
 	Ne,   = getEdgeConstraints(param.Mesh)
@@ -29,7 +29,7 @@ function getData(sigma,   # conductivity
 
 	A   = Curl' * Mmu * Curl - (im * w) * Msig
 	rhs = (im * w) * (Ne' * S)
-	
+  	
 	param.Ainv.doClear = 1
 	U, param.Ainv = solveMaxFreq(A, rhs, Msig,
 	                             param.Mesh, w, param.Ainv,0)
@@ -48,7 +48,7 @@ function getData(sigma,   # conductivity
 end # function getData
 
 if hasJOcTree
-function getData(sigma,  # conductivity
+function getData(sigma::Vector,  # conductivity
 	              param::MaxwellFreqParam{OcTreeMeshFEM},
 	              doClear::Bool=false)
 	# Maxwell Forward problem for FEM discretization on OcTreeMesh

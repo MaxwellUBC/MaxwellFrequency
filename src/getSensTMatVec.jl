@@ -2,7 +2,9 @@ export getSensTMatVec
 
 # = ========= The Transpose sensitivity ===========================
 
-function getSensTMatVec(x::Vector,sigma::Vector,param::MaxwellFreqParam)
+function getSensTMatVec(x::Vector,
+                      sigma::Vector,
+                      param::MaxwellFreqParam)
 # SensT Mat Vec for FV disctretization on OcTree mesh
 	mu   = 4*pi*1e-7
 	U    = param.Fields
@@ -10,8 +12,8 @@ function getSensTMatVec(x::Vector,sigma::Vector,param::MaxwellFreqParam)
 	P    = param.Obs
   
 	Curl = getCurlMatrix(param.Mesh)
-	Msig = getEdgeMassMatrix(param.Mesh,vec(sigma))
-	Mmu  = getFaceMassMatrix(param.Mesh,vec(zeros(size(sigma)).+1/mu))
+	Msig = getEdgeMassMatrix(param.Mesh,sigma)
+	Mmu  = getFaceMassMatrix(param.Mesh,fill(1/mu,param.Mesh.nc))
   
   # eliminate hanging edges and faces
 	Ne,   = getEdgeConstraints(param.Mesh)
@@ -28,7 +30,7 @@ function getSensTMatVec(x::Vector,sigma::Vector,param::MaxwellFreqParam)
   
 	for i=1:size(U,2)
 		u     = U[:,i] 
-		dAdm  = getdEdgeMassMatrix(param.Mesh,u)
+		dAdm  = getdEdgeMassMatrix(param.Mesh,sigma,u)
 		dAdm  = -im*w*Ne'*dAdm
 		z     = -Ne'*(P*X[:,i])
 		z,    = solveMaxFreq(A,z,Msig,param.Mesh,w,param.Ainv,1)
@@ -41,15 +43,15 @@ end
 
 function getSensTMatVec(x::SparseMatrixCSC,sigma::Vector,param::MaxwellFreqParam)
 	# SensT Mat Vec for FV disctretization on OcTree mesh
-	x = full(x)
+	x    = full(x)
 	mu   = 4*pi*1e-7
 	U    = param.Fields
 	w    = param.freq
 	P    = param.Obs
 	
 	Curl = getCurlMatrix(param.Mesh)
-	Msig = getEdgeMassMatrix(param.Mesh,vec(sigma))
-	Mmu  = getFaceMassMatrix(param.Mesh,fill(1/mu,length(sigma)))
+	Msig = getEdgeMassMatrix(param.Mesh,sigma)
+	Mmu  = getFaceMassMatrix(param.Mesh,fill(1/mu,param.Mesh.nc))
   
   # eliminate hanging edges and faces
 	Ne,   = getEdgeConstraints(param.Mesh)
@@ -71,7 +73,7 @@ function getSensTMatVec(x::SparseMatrixCSC,sigma::Vector,param::MaxwellFreqParam
 			Z     = -Ne'*(P*squeeze(X[:,i,:],2))
 			Z,    = solveMaxFreq(A,Z,Msig,param.Mesh,w,param.Ainv,1)
 			u     = U[:,i] 
-			dAdm  = getdEdgeMassMatrix(param.Mesh,u)
+			dAdm  = getdEdgeMassMatrix(param.Mesh,sigma,u)
 			dAdm  = -im*w*Ne'*dAdm
 			#matv[:,:,i] = (dAdm'*Z)
 			matv +=  (dAdm'*Z)
